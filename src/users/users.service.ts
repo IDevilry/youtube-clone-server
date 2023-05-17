@@ -1,15 +1,22 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { CreateUserRegDto } from 'src/auth/dto/CreateUserRegDto';
-import { User } from 'src/database/schemas/user.schema';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import mongoose, { Model } from "mongoose";
+import { CreateUserRegDto } from "src/auth/dto/CreateUserRegDto";
+import { User } from "src/database/schemas/user.schema";
+import { CreateUserDto } from "./dto/CreateUserDto";
+import { currUser } from "./types";
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel('User')
-    private readonly userModel: Model<User>,
+    @InjectModel("User")
+    private readonly userModel: Model<User>
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -19,7 +26,7 @@ export class UsersService {
   async findOne(id: string): Promise<User> {
     const user = await this.userModel.findOne({ _id: id }, { password: 0 });
     if (!user) {
-      throw new NotFoundException('Пользователь не найден');
+      throw new NotFoundException("Пользователь не найден");
     }
     return user;
   }
@@ -33,4 +40,84 @@ export class UsersService {
     const { password, ...result } = createdUser.toObject();
     return result;
   }
+
+  async update(
+    id: string,
+    user: CreateUserDto,
+    currUser: currUser
+  ): Promise<User> {
+    if (id !== currUser.userId) {
+      throw new ForbiddenException("Редактировать можно только свой аккаунт");
+    }
+    const updatedUser = await this.userModel.findByIdAndUpdate(id, user, {
+      fields: { password: 0 },
+      new: true,
+    });
+    if (!updatedUser) {
+      throw new NotFoundException("Пользователь не найден");
+    }
+    return updatedUser;
+  }
+
+  async delete(id: string, currUser: currUser): Promise<string> {
+    if (id !== currUser.userId) {
+      throw new ForbiddenException("Удалить можно только свой аккаунт");
+    }
+    const deletedUser = await this.userModel.findByIdAndDelete(id);
+    if (!deletedUser) {
+      throw new NotFoundException("Пользователь не найден");
+    }
+    return deletedUser._id;
+  }
+
+  async subscribe(id: string, currUser: currUser) {
+    const targetUser = await this.userModel.findById(id);
+    if (!targetUser) {
+      throw new NotFoundException("Пользователь не найден");
+    }
+
+    const isSub = targetUser.subscribers.find(
+      (user) => String(user._id) === currUser.userId
+    );
+
+    if (isSub) {
+      throw new BadRequestException("Вы уже подписаны");
+    }
+
+    await this.userModel.findByIdAndUpdate(id, {
+      $push: { subscribers: new mongoose.Types.ObjectId(currUser.userId) },
+    });
+
+    await this.userModel.findByIdAndUpdate(currUser.userId, {
+      $push: { subscribedToUsers: targetUser },
+    });
+
+    return "Успех";
+  }
+
+  async unsubscribe(id: string, currUser: currUser) {
+    const targetUser = await this.userModel.findById(id);
+    if (!targetUser) {
+      throw new NotFoundException("Пользователь не найден");
+    }
+
+    const isSub = targetUser.subscribers.find(
+      (user) => String(user._id) === currUser.userId
+    );
+
+    if (!isSub) {
+      throw new BadRequestException("Вы не подписаны");
+    }
+
+    await this.userModel.findByIdAndUpdate(id, {
+      $pull: { subscribers: new mongoose.Types.ObjectId(currUser.userId) },
+    });
+
+    await this.userModel.findByIdAndUpdate(currUser.userId, {
+      $pull: { subscribedToUsers: new mongoose.Types.ObjectId(targetUser._id) },
+    });
+
+    return "Успех";
+  }
 }
+

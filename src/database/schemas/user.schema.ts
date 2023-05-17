@@ -1,6 +1,6 @@
-import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
-import mongoose, { type HydratedDocument } from 'mongoose';
-import { Video } from './video.schema';
+import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
+import mongoose, { type HydratedDocument } from "mongoose";
+import { Video } from "./video.schema";
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -19,14 +19,18 @@ export class User {
   @Prop({ type: String })
   profileImage: string;
 
-  @Prop({ type: Number })
-  subscribers: number;
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }] })
+  likedVideos: Video[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
-  subscribedUsers: User[];
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }] })
+  subscribers: User[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }] })
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }] })
+  subscribedToUsers: User[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }] })
   videos: Video[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
