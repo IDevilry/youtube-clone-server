@@ -6,11 +6,11 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import mongoose, { Model } from "mongoose";
 import { CreateUserRegDto } from "../auth/dto/CreateUserRegDto";
-import { User } from "../database/schemas/user.schema";
 import { CreateUserDto } from "./dto/CreateUserDto";
+import { User } from "../database/schemas/user.schema";
 import { currUser } from "./types";
+import mongoose, { Model } from "mongoose";
 
 @Injectable()
 export class UsersService {

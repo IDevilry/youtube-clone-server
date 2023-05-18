@@ -4,12 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import mongoose, { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import { Video } from "../database/schemas/video.schema";
 import { CreateVideoDto } from "./dto/CreateVideoDto";
 import { currUser } from "../users/types";
 import { User } from "../database/schemas/user.schema";
+import mongoose, { Model } from "mongoose";
 
 @Injectable()
 export class VideosService {

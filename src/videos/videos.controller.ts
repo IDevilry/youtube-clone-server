@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { VideosService } from "./videos.service";
 import { CreateVideoDto } from "./dto/CreateVideoDto";
-import { Public } from "../decorators/Public.decorator";
+import { Public } from "../decorators/public.decorator";
 
 @Controller("videos")
 export class VideosController {

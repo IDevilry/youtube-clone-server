@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
 
-import { type CreateUserDto } from "./dto/CreateUserDto";
+import { CreateUserDto } from "./dto/CreateUserDto";
 
 @Controller("users")
 export class UsersController {
