@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CommentSchema } from 'src/database/schemas/comment.schema';
+import { CommentSchema } from '../database/schemas/comment.schema';
 
 @Module({
   controllers: [CommentsController],
