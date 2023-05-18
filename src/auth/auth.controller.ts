@@ -4,23 +4,28 @@ import {
   Post,
   UsePipes,
   ValidationPipe,
-} from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { CreateUserRegDto } from './dto/CreateUserRegDto';
-import { CreateUserLoginDto } from './dto/CreateUserLoginDto';
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { Public } from "src/decorators/Public.decorator";
 
-@Controller('auth')
+import { type CreateUserRegDto } from "./dto/CreateUserRegDto";
+import { type CreateUserLoginDto } from "./dto/CreateUserLoginDto";
+
+@Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('login')
+  @Public()
+  @Post("login")
   async login(@Body() user: CreateUserLoginDto) {
     return this.authService.login(user);
   }
 
+  @Public()
   @UsePipes(new ValidationPipe())
-  @Post('register')
+  @Post("register")
   async register(@Body() user: CreateUserRegDto) {
     return this.authService.register(user);
   }
 }
+
