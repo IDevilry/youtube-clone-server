@@ -6,10 +6,10 @@ import {
 } from "@nestjs/common";
 import mongoose, { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
-import { Video } from "src/database/schemas/video.schema";
+import { Video } from "../database/schemas/video.schema";
 import { CreateVideoDto } from "./dto/CreateVideoDto";
-import { currUser } from "src/users/types";
-import { User } from "src/database/schemas/user.schema";
+import { currUser } from "../users/types";
+import { User } from "../database/schemas/user.schema";
 
 @Injectable()
 export class VideosService {

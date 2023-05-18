@@ -1,12 +1,13 @@
 import {
   Body,
   Controller,
+  HttpCode,
   Post,
   UsePipes,
   ValidationPipe,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { Public } from "src/decorators/Public.decorator";
+import { Public } from "../decorators/Public.decorator";
 
 import { type CreateUserRegDto } from "./dto/CreateUserRegDto";
 import { type CreateUserLoginDto } from "./dto/CreateUserLoginDto";
@@ -17,6 +18,7 @@ export class AuthController {
 
   @Public()
   @Post("login")
+  @HttpCode(200)
   async login(@Body() user: CreateUserLoginDto) {
     return this.authService.login(user);
   }

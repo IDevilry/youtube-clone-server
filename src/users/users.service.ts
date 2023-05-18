@@ -7,8 +7,8 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import mongoose, { Model } from "mongoose";
-import { CreateUserRegDto } from "src/auth/dto/CreateUserRegDto";
-import { User } from "src/database/schemas/user.schema";
+import { CreateUserRegDto } from "../auth/dto/CreateUserRegDto";
+import { User } from "../database/schemas/user.schema";
 import { CreateUserDto } from "./dto/CreateUserDto";
 import { currUser } from "./types";
 
