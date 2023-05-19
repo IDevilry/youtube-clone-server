@@ -5,21 +5,31 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Video } from "../database/schemas/video.schema";
+import { Video, VideoDocument } from "../database/schemas/video.schema";
 import { CreateVideoDto } from "./dto/CreateVideoDto";
 import { currUser } from "../users/types";
-import { User } from "../database/schemas/user.schema";
-import mongoose, { Model } from "mongoose";
+import { UserDocument } from "../database/schemas/user.schema";
+import { Model } from "mongoose";
 
 @Injectable()
 export class VideosService {
   constructor(
-    @InjectModel("Video") private readonly videoModel: Model<Video>,
-    @InjectModel("User") private readonly userModel: Model<User>
+    @InjectModel("Video") private readonly videoModel: Model<VideoDocument>,
+    @InjectModel("User") private readonly userModel: Model<UserDocument>
   ) {}
 
   async findAll(): Promise<Video[]> {
-    return await this.videoModel.find();
+    return await this.videoModel.find().populate("user");
+  }
+
+  async findSubs(currUser: currUser): Promise<Video[]> {
+    const currentUser = await this.userModel.findById(currUser.userId);
+
+    return await this.videoModel.find({
+      user: {
+        $in: currentUser.subscribedToUsers,
+      },
+    });
   }
 
   async findOne(id: string): Promise<Video> {
@@ -35,7 +45,7 @@ export class VideosService {
     if (!deletedVideo) {
       throw new NotFoundException("Видео не найдно");
     }
-    if (deletedVideo.user._id !== currUser.userId) {
+    if (String(deletedVideo.user._id) !== currUser.userId) {
       throw new ForbiddenException("Вы можете удалить только своё видео");
     }
     return String(deletedVideo._id);
@@ -47,8 +57,10 @@ export class VideosService {
       throw new NotFoundException("Видео не найдено");
     }
 
-    const isLiked = targetVideo.likes.find(
-      (user) => String(user._id) === currUser.userId
+    const currentUser = await this.userModel.findById(currUser.userId);
+
+    const isLiked = currentUser.likedVideos.find(
+      (video) => String(video._id) === String(targetVideo._id)
     );
 
     if (isLiked) {
@@ -56,7 +68,7 @@ export class VideosService {
     }
 
     await this.videoModel.findByIdAndUpdate(id, {
-      $push: { likes: new mongoose.Types.ObjectId(currUser.userId) },
+      $inc: { likes: 1 },
     });
 
     await this.userModel.findByIdAndUpdate(currUser.userId, {
@@ -71,9 +83,10 @@ export class VideosService {
     if (!targetVideo) {
       throw new NotFoundException("Видео не найдено");
     }
+    const currentUser = await this.userModel.findById(currUser.userId);
 
-    const isLiked = targetVideo.likes.find(
-      (user) => String(user._id) === currUser.userId
+    const isLiked = currentUser.likedVideos.find(
+      (video) => String(video._id) === String(targetVideo._id)
     );
 
     if (!isLiked) {
@@ -81,7 +94,7 @@ export class VideosService {
     }
 
     await this.videoModel.findByIdAndUpdate(id, {
-      $pull: { likes: new mongoose.Types.ObjectId(currUser.userId) },
+      $inc: { likes: -1 },
     });
 
     await this.userModel.findByIdAndUpdate(currUser.userId, {

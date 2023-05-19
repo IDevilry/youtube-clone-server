@@ -6,6 +6,7 @@ export type VideoDocument = HydratedDocument<Video>;
 
 @Schema({ timestamps: true })
 export class Video {
+  _id: string
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   user: User;
 
@@ -27,11 +28,8 @@ export class Video {
   @Prop({ type: [String] })
   tags: string[];
 
-  @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'User' }], default: [] })
-  likes: User[];
-
-  @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'User' }], default: [] })
-  dislikes: User[];
+  @Prop({ type: Number, default: 0 })
+  likes: number;
 
   @Prop({
     type: [{ type: mongoose.Types.ObjectId, ref: 'Comment' }],

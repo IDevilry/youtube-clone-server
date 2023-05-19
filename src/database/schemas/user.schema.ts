@@ -4,17 +4,23 @@ import { Video } from "./video.schema";
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, id: true })
 export class User {
-  _id: string;
+  _id: string
   @Prop({ type: String, required: true })
   name: string;
 
   @Prop({ type: String, required: true, unique: true })
   email: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   password: string;
+
+  @Prop({ type: Boolean, default: false })
+  withGoogle: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  emailVerified: boolean;
 
   @Prop({ type: String })
   profileImage: string;
@@ -22,8 +28,8 @@ export class User {
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }] })
   likedVideos: Video[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }] })
-  subscribers: User[];
+  @Prop({ type: Number, default: 0  })
+  subscribers: number;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }] })
   subscribedToUsers: User[];

@@ -7,7 +7,7 @@ export class CreateVideoDto {
   title: string;
   @IsString()
   @Length(1, 250, {
-    message: "Название должно быть длиной от 1 до 250 символов",
+    message: "Описание должно быть длиной от 1 до 250 символов",
   })
   description: string;
   @IsString()

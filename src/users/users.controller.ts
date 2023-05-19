@@ -20,9 +20,14 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get("/:id")
+  @Get("/find/:id")
   async findOne(@Param("id") id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Get("me")
+  async findMe(@Request() req) {
+    return this.usersService.findMe(req.user);
   }
 
   @Put("update/:id")

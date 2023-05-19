@@ -4,6 +4,7 @@ import { Public } from "../decorators/public.decorator";
 
 import { CreateUserRegDto } from "./dto/CreateUserRegDto";
 import { CreateUserLoginDto } from "./dto/CreateUserLoginDto";
+import { CreateGoogleAuthDto } from "./dto/CreateGoogleAuthDto";
 
 @Controller("auth")
 export class AuthController {
@@ -21,5 +22,12 @@ export class AuthController {
   async register(@Body() createUserRegDto: CreateUserRegDto) {
     return this.authService.register(createUserRegDto);
   }
+
+  @Public()
+  @Post("google")
+  async googleAuth(@Body() user: CreateGoogleAuthDto) {
+    return this.authService.googleAuth(user);
+  }
 }
+
 

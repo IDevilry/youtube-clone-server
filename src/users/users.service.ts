@@ -31,11 +31,17 @@ export class UsersService {
     return user;
   }
 
+  async findMe(currUser: currUser): Promise<User> {
+    return await this.userModel.findOne({
+      _id: currUser.userId,
+    });
+  }
+
   async findByEmail(email: string): Promise<User> {
     return this.userModel.findOne({ email });
   }
 
-  async create(user: CreateUserRegDto): Promise<any> {
+  async create<T = CreateUserRegDto>(user: T): Promise<any> {
     const createdUser = await this.userModel.create(user);
     const { password, ...result } = createdUser.toObject();
     return result;
@@ -76,8 +82,9 @@ export class UsersService {
       throw new NotFoundException("Пользователь не найден");
     }
 
-    const isSub = targetUser.subscribers.find(
-      (user) => String(user._id) === currUser.userId
+    const currentUser = await this.userModel.findById(currUser.userId);
+    const isSub = currentUser.subscribedToUsers.find(
+      (user) => user._id === targetUser._id
     );
 
     if (isSub) {
@@ -85,7 +92,7 @@ export class UsersService {
     }
 
     await this.userModel.findByIdAndUpdate(id, {
-      $push: { subscribers: new mongoose.Types.ObjectId(currUser.userId) },
+      $inc: { subscribers: 1 },
     });
 
     await this.userModel.findByIdAndUpdate(currUser.userId, {
@@ -97,12 +104,13 @@ export class UsersService {
 
   async unsubscribe(id: string, currUser: currUser) {
     const targetUser = await this.userModel.findById(id);
+
     if (!targetUser) {
       throw new NotFoundException("Пользователь не найден");
     }
-
-    const isSub = targetUser.subscribers.find(
-      (user) => String(user._id) === currUser.userId
+    const currentUser = await this.userModel.findById(currUser.userId);
+    const isSub = currentUser.subscribedToUsers.find(
+      (user) => user._id === targetUser._id
     );
 
     if (!isSub) {
@@ -110,7 +118,7 @@ export class UsersService {
     }
 
     await this.userModel.findByIdAndUpdate(id, {
-      $pull: { subscribers: new mongoose.Types.ObjectId(currUser.userId) },
+      $inc: { subscribers: -1 },
     });
 
     await this.userModel.findByIdAndUpdate(currUser.userId, {

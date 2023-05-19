@@ -1,20 +1,17 @@
-import {
-  BadRequestException,
-  HttpException,
-  Injectable,
-} from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { User } from '../database/schemas/user.schema';
-import { CreateUserRegDto } from './dto/CreateUserRegDto';
-import { CreateUserLoginDto } from './dto/CreateUserLoginDto';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { BadRequestException, HttpException, Injectable } from "@nestjs/common";
+import { UsersService } from "../users/users.service";
+import { User } from "../database/schemas/user.schema";
+import { CreateUserRegDto } from "./dto/CreateUserRegDto";
+import { CreateUserLoginDto } from "./dto/CreateUserLoginDto";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
+import { CreateGoogleAuthDto } from "./dto/CreateGoogleAuthDto";
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -29,7 +26,7 @@ export class AuthService {
   }
 
   async login(
-    user: CreateUserLoginDto,
+    user: CreateUserLoginDto
   ): Promise<{ user: User; access_token: string }> {
     const validateUser = await this.validateUser(user.email, user.password);
 
@@ -47,13 +44,13 @@ export class AuthService {
   }
 
   async register(
-    user: CreateUserRegDto,
+    user: CreateUserRegDto
   ): Promise<{ user: User; access_token: string }> {
     const userExists = await this.usersService.findByEmail(user.email);
     if (userExists) {
       throw new HttpException(
         `Пользователь с почтой ${user.email} уже существует`,
-        400,
+        400
       );
     }
     const hashedPass = await bcrypt.hash(user.password, 10);
@@ -72,4 +69,34 @@ export class AuthService {
       access_token: await this.jwtService.signAsync(payload),
     };
   }
+
+  async googleAuth(user: CreateGoogleAuthDto) {
+    const userExists = await this.usersService.findByEmail(user.email);
+    if (!userExists) {
+      const newUser = await this.usersService.create<CreateGoogleAuthDto>({
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage,
+        withGoogle: true,
+        emailVerified: user.emailVerified,
+      });
+      const payload = {
+        username: newUser.name,
+        userId: String(newUser._id),
+      };
+      return {
+        user: newUser,
+        access_token: await this.jwtService.signAsync(payload),
+      };
+    }
+    const payload = {
+      username: userExists.name,
+      userId: String(userExists._id),
+    };
+    return {
+      user: userExists,
+      access_token: await this.jwtService.signAsync(payload),
+    };
+  }
 }
+

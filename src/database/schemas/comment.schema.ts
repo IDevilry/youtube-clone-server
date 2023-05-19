@@ -1,16 +1,17 @@
-import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument } from 'mongoose';
-import { User } from './user.schema';
-import { Video } from './video.schema';
+import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
+import { User } from "./user.schema";
+import { Video } from "./video.schema";
 
 export type CommentDocument = HydratedDocument<Comment>;
 
 @Schema({ timestamps: true })
 export class Comment {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  _id: string;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: "User" })
   user: User;
 
-  @Prop({ type: mongoose.Types.ObjectId, ref: 'Video' })
+  @Prop({ type: mongoose.Types.ObjectId, ref: "Video" })
   video: Video;
 
   @Prop({ type: String })
@@ -18,3 +19,4 @@ export class Comment {
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
+

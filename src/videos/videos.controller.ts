@@ -25,9 +25,14 @@ export class VideosController {
   }
 
   @Public()
-  @Get(":id")
+  @Get("find/:id")
   async findOne(@Param("id") id: string) {
     return this.videosService.findOne(id);
+  }
+
+  @Get("subs")
+  async getSubs(@Request() req) {
+    return this.videosService.findSubs(req.user);
   }
 
   @UsePipes(new ValidationPipe())
