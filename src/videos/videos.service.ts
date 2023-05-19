@@ -18,18 +18,26 @@ export class VideosService {
     @InjectModel("User") private readonly userModel: Model<UserDocument>
   ) {}
 
-  async findAll(): Promise<Video[]> {
-    return await this.videoModel.find().populate("user");
+  async findAll(limit = 20, page = 1): Promise<Video[]> {
+    const offset = page * limit - limit;
+    return await this.videoModel
+      .find()
+      .skip(offset)
+      .limit(limit)
+      .populate("user");
   }
 
-  async findSubs(currUser: currUser): Promise<Video[]> {
+  async findSubs(currUser: currUser, limit = 20, page = 1): Promise<Video[]> {
     const currentUser = await this.userModel.findById(currUser.userId);
-
-    return await this.videoModel.find({
-      user: {
-        $in: currentUser.subscribedToUsers,
-      },
-    });
+    const offset = page * limit - limit;
+    return await this.videoModel
+      .find({
+        user: {
+          $in: currentUser.subscribedToUsers,
+        },
+      })
+      .skip(offset)
+      .limit(limit);
   }
 
   async findOne(id: string): Promise<Video> {
@@ -52,12 +60,14 @@ export class VideosService {
   }
 
   async like(id: string, currUser: currUser): Promise<string> {
-    const targetVideo = await this.videoModel.findById(id);
+    const [targetVideo, currentUser] = await Promise.all([
+      this.videoModel.findById(id),
+      this.userModel.findById(currUser.userId),
+    ]);
+
     if (!targetVideo) {
       throw new NotFoundException("Видео не найдено");
     }
-
-    const currentUser = await this.userModel.findById(currUser.userId);
 
     const isLiked = currentUser.likedVideos.find(
       (video) => String(video._id) === String(targetVideo._id)
@@ -66,24 +76,27 @@ export class VideosService {
     if (isLiked) {
       throw new BadRequestException("Вы уже поставили лайк");
     }
-
-    await this.videoModel.findByIdAndUpdate(id, {
-      $inc: { likes: 1 },
-    });
-
-    await this.userModel.findByIdAndUpdate(currUser.userId, {
-      $push: { likedVideos: targetVideo },
-    });
+    await Promise.all([
+      this.videoModel.findByIdAndUpdate(id, {
+        $inc: { likes: 1 },
+      }),
+      this.userModel.findByIdAndUpdate(currUser.userId, {
+        $push: { likedVideos: targetVideo },
+      }),
+    ]);
 
     return "Успех";
   }
 
   async dislike(id: string, currUser: currUser): Promise<string> {
-    const targetVideo = await this.videoModel.findById(id);
+    const [targetVideo, currentUser] = await Promise.all([
+      this.videoModel.findById(id),
+      this.userModel.findById(currUser.userId),
+    ]);
+
     if (!targetVideo) {
       throw new NotFoundException("Видео не найдено");
     }
-    const currentUser = await this.userModel.findById(currUser.userId);
 
     const isLiked = currentUser.likedVideos.find(
       (video) => String(video._id) === String(targetVideo._id)
@@ -92,14 +105,14 @@ export class VideosService {
     if (!isLiked) {
       throw new BadRequestException("Вы не ставили лайк этому видео");
     }
-
-    await this.videoModel.findByIdAndUpdate(id, {
-      $inc: { likes: -1 },
-    });
-
-    await this.userModel.findByIdAndUpdate(currUser.userId, {
-      $pull: { likedVideos: targetVideo._id },
-    });
+    await Promise.all([
+      this.videoModel.findByIdAndUpdate(id, {
+        $inc: { likes: -1 },
+      }),
+      this.userModel.findByIdAndUpdate(currUser.userId, {
+        $pull: { likedVideos: targetVideo._id },
+      }),
+    ]);
 
     return "Успех";
   }

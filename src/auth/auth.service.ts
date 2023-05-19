@@ -14,12 +14,16 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async validateUser(email: string, password: string): Promise<User> {
+  async validateUser(
+    email: string,
+    password: string
+  ): Promise<Omit<User, "password">> {
     const user = await this.usersService.findByEmail(email);
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      user.password = undefined;
-      return user;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
+      return result;
     } else {
       return null;
     }
@@ -27,7 +31,7 @@ export class AuthService {
 
   async login(
     user: CreateUserLoginDto
-  ): Promise<{ user: User; access_token: string }> {
+  ): Promise<{ user: Omit<User, "password">; access_token: string }> {
     const validateUser = await this.validateUser(user.email, user.password);
 
     if (!validateUser) {
@@ -45,7 +49,7 @@ export class AuthService {
 
   async register(
     user: CreateUserRegDto
-  ): Promise<{ user: User; access_token: string }> {
+  ): Promise<{ user: Omit<User, "password">; access_token: string }> {
     const userExists = await this.usersService.findByEmail(user.email);
     if (userExists) {
       throw new HttpException(

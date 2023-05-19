@@ -4,11 +4,13 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Request,
   UsePipes,
   ValidationPipe,
+  Query,
 } from "@nestjs/common";
 import { VideosService } from "./videos.service";
 import { CreateVideoDto } from "./dto/CreateVideoDto";
@@ -20,8 +22,11 @@ export class VideosController {
 
   @Public()
   @Get()
-  async findAll() {
-    return this.videosService.findAll();
+  async findAll(
+    @Query("page", ParseIntPipe) page: number,
+    @Query("limit", ParseIntPipe) limit: number
+  ) {
+    return this.videosService.findAll(page, limit);
   }
 
   @Public()
@@ -31,8 +36,12 @@ export class VideosController {
   }
 
   @Get("subs")
-  async getSubs(@Request() req) {
-    return this.videosService.findSubs(req.user);
+  async getSubs(
+    @Request() req,
+    @Query("page", ParseIntPipe) page: number,
+    @Query("limit", ParseIntPipe) limit: number
+    ) {
+    return this.videosService.findSubs(req.user, page, limit);
   }
 
   @UsePipes(new ValidationPipe())

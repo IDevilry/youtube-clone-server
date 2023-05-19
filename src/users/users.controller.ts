@@ -4,20 +4,25 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Put,
+  Query,
   Request,
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
 
-import { CreateUserDto } from "./dto/CreateUserDto";
+import { UpdateUserDto } from "./dto/UpdateUser.dto";
 
 @Controller("users")
 export class UsersController {
   constructor(readonly usersService: UsersService) {}
 
   @Get("/")
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(
+    @Query("limit", ParseIntPipe) limit: number,
+    @Query("page", ParseIntPipe) page: number
+  ) {
+    return this.usersService.findAll(limit, page);
   }
 
   @Get("/find/:id")
@@ -33,7 +38,7 @@ export class UsersController {
   @Put("update/:id")
   async update(
     @Param("id") id: string,
-    @Body() user: CreateUserDto,
+    @Body() user: UpdateUserDto,
     @Request() req
   ) {
     return this.usersService.update(id, user, req.user);

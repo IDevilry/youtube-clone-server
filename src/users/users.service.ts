@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { CreateUserRegDto } from "../auth/dto/CreateUserRegDto";
-import { CreateUserDto } from "./dto/CreateUserDto";
 import { User } from "../database/schemas/user.schema";
-import { currUser } from "./types";
+import { UpdateUserDto } from "./dto/UpdateUser.dto";
+import { type currUser } from "./types";
 import mongoose, { Model } from "mongoose";
 
 @Injectable()
@@ -19,8 +19,17 @@ export class UsersService {
     private readonly userModel: Model<User>
   ) {}
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.find({}, { password: 0 });
+  async findAll(limit = 20, page = 1): Promise<User[]> {
+    try {
+      const offset = limit * page - limit;
+      return await this.userModel
+        .find({}, { password: 0 })
+        .skip(offset)
+        .limit(limit)
+        .sort({ _id: -1 });
+    } catch {
+      throw new InternalServerErrorException();
+    }
   }
 
   async findOne(id: string): Promise<User> {
@@ -38,18 +47,22 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    return this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ email });
+    if (user) {
+      return user.toObject();
+    }
   }
 
-  async create<T = CreateUserRegDto>(user: T): Promise<any> {
+  async create<T = CreateUserRegDto>(user: T): Promise<Omit<User, "password">> {
     const createdUser = await this.userModel.create(user);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = createdUser.toObject();
     return result;
   }
 
   async update(
     id: string,
-    user: CreateUserDto,
+    user: UpdateUserDto,
     currUser: currUser
   ): Promise<User> {
     if (id !== currUser.userId) {
@@ -76,13 +89,16 @@ export class UsersService {
     return deletedUser._id;
   }
 
-  async subscribe(id: string, currUser: currUser) {
-    const targetUser = await this.userModel.findById(id);
+  async subscribe(id: string, currUser: currUser): Promise<string> {
+    const [targetUser, currentUser] = await Promise.all([
+      this.userModel.findById(id),
+      this.userModel.findById(currUser.userId),
+    ]);
+
     if (!targetUser) {
       throw new NotFoundException("Пользователь не найден");
     }
 
-    const currentUser = await this.userModel.findById(currUser.userId);
     const isSub = currentUser.subscribedToUsers.find(
       (user) => user._id === targetUser._id
     );
@@ -90,25 +106,27 @@ export class UsersService {
     if (isSub) {
       throw new BadRequestException("Вы уже подписаны");
     }
-
-    await this.userModel.findByIdAndUpdate(id, {
-      $inc: { subscribers: 1 },
-    });
-
-    await this.userModel.findByIdAndUpdate(currUser.userId, {
-      $push: { subscribedToUsers: targetUser },
-    });
-
+    await Promise.all([
+      this.userModel.findByIdAndUpdate(id, {
+        $inc: { subscribers: 1 },
+      }),
+      this.userModel.findByIdAndUpdate(currUser.userId, {
+        $push: { subscribedToUsers: targetUser },
+      }),
+    ]);
     return "Успех";
   }
 
-  async unsubscribe(id: string, currUser: currUser) {
-    const targetUser = await this.userModel.findById(id);
+  async unsubscribe(id: string, currUser: currUser): Promise<string> {
+    const [targetUser, currentUser] = await Promise.all([
+      this.userModel.findById(id),
+      this.userModel.findById(currUser.userId),
+    ]);
 
     if (!targetUser) {
       throw new NotFoundException("Пользователь не найден");
     }
-    const currentUser = await this.userModel.findById(currUser.userId);
+
     const isSub = currentUser.subscribedToUsers.find(
       (user) => user._id === targetUser._id
     );
@@ -117,13 +135,16 @@ export class UsersService {
       throw new BadRequestException("Вы не подписаны");
     }
 
-    await this.userModel.findByIdAndUpdate(id, {
-      $inc: { subscribers: -1 },
-    });
-
-    await this.userModel.findByIdAndUpdate(currUser.userId, {
-      $pull: { subscribedToUsers: new mongoose.Types.ObjectId(targetUser._id) },
-    });
+    await Promise.all([
+      this.userModel.findByIdAndUpdate(id, {
+        $inc: { subscribers: -1 },
+      }),
+      this.userModel.findByIdAndUpdate(currUser.userId, {
+        $pull: {
+          subscribedToUsers: new mongoose.Types.ObjectId(targetUser._id),
+        },
+      }),
+    ]);
 
     return "Успех";
   }
